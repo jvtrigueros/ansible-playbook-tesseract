@@ -1,0 +1,57 @@
+---
+- hosts: tesseract
+  vars:
+    tesseract_dir: ./tesseract-ocr-read-only
+  tasks:
+    - name: Update Apt
+      sudo: yes
+      apt: 
+        update_cache: yes
+        cache_valid_time: 3600
+
+
+    - name: Install pre-requisites
+      apt: pkg={{ item }}
+      sudo: yes
+      with_items:
+        - autoconf
+        - automake
+        - libtool
+        - subversion
+        
+    - name: Install Tesseract dependencies part 1
+      apt: pkg={{ item }}
+      sudo: yes
+      with_items:
+        - libpng12-dev
+        - libjpeg62-dev
+        - zlib1g-dev
+        - libleptonica-dev
+    
+    - name: Install Tesseract dependencies part 2
+      apt: pkg=libtiff4-dev
+      sudo: yes
+
+    - name: Get tesseract code
+      subversion:
+        repo: http://tesseract-ocr.googlecode.com/svn/trunk/ 
+        dest: "{{ tesseract_dir }}"
+
+    - name: Configure Tesseract
+      command: chdir={{ tesseract_dir }} {{ item }}
+      with_items:
+        - ./autogen.sh
+        - ./configure 
+        - make
+      tags:
+        - compile
+
+    - name: Installing Tesseract
+      command: chdir={{ tesseract_dir }} {{ item }}
+      sudo: yes
+      with_items:
+        - make install
+        - ldconfig
+      tags:
+        - install
+
